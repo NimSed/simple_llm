@@ -61,6 +61,28 @@ rnn = RNNModel(input_size, hidden_size, output_size).to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(rnn.parameters(), lr=learning_rate)
 
+# Generate text
+def generate_text(rnn, seed_text='Gutenberg', predict_len=200):
+    with torch.no_grad():
+        hidden = rnn.init_hidden().to(device)
+        seed_text_as_int = torch.tensor([char_to_idx[ch] for ch in seed_text], dtype=torch.long).to(device)
+        seed_text_as_onehot = one_hot(seed_text_as_int, num_classes=input_size).float()
+
+        for i in range(len(seed_text) - 1):
+            _, hidden = rnn(seed_text_as_onehot[i].view(1, -1), hidden)
+
+        predicted_text = seed_text
+        x = seed_text_as_onehot[-1].view(1, -1)
+
+        for i in range(predict_len):
+            output, hidden = rnn(x, hidden)
+            _, topi = output.topk(1)
+            predicted_char = idx_to_char[topi.item()]
+            predicted_text += predicted_char
+            x = one_hot(topi, num_classes=input_size).float().view(1, -1)
+
+    return predicted_text
+
 # Train the model
 for epoch in range(num_epochs):
     total_loss = 0
@@ -87,26 +109,4 @@ for epoch in range(num_epochs):
             print(f'Epoch [{epoch+1}/{num_epochs}], Batch [{batch_idx+1}/{n_batches}], Loss: {loss.item()}')
 
     print(f'Epoch {epoch + 1}/{num_epochs}, Loss: {total_loss / n_batches}')
-
-def validate(rnn, text_as_int):
-    hidden = rnn.init_hidden()
-    loss = 0
-    for i in range(len(text_as_int) - 1):
-        x = torch.tensor(text_as_int[i], dtype=torch.float32).view(1, 1)
-        y = torch.tensor(text_as_int[i+1], dtype=torch.float32).view(1, 1)
-        output, hidden = RNNModel(x, hidden)
-        loss += criterion(output, y)
-    return loss
-
-# Generate text
-with torch.no_grad():
-    hidden = rnn.init_hidden()
-    start = np.random.randint(0, len(text_as_int) - input_size)
-    input = torch.tensor(text_as_int[start:start+input_size]).float()
-    print(idx_to_char[text_as_int[start]], end='')
-    for i in range(100):
-        output, hidden = rnn(input, hidden)
-        output = torch.argmax(output)
-        print(idx_to_char[output.item()], end='')
-        input = output
-    print()
+    print(generate_text(rnn))
