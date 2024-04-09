@@ -83,26 +83,3 @@ for epoch in range(num_epochs):
             print(f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{len(text_as_int) - 1}], Loss: {loss.item()}')
 
     print(f'Epoch {epoch + 1}/{num_epochs}, Loss: {total_loss / len(text_as_int)}')
-
-def validate(rnn, text_as_int):
-    hidden = rnn.init_hidden()
-    loss = 0
-    for i in range(len(text_as_int) - 1):
-        x = torch.tensor(text_as_int[i], dtype=torch.float32).view(1, 1)
-        y = torch.tensor(text_as_int[i+1], dtype=torch.float32).view(1, 1)
-        output, hidden = RNNModel(x, hidden)
-        loss += criterion(output, y)
-    return loss
-
-# Generate text
-with torch.no_grad():
-    hidden = rnn.init_hidden()
-    start = np.random.randint(0, len(text_as_int) - input_size)
-    input = torch.tensor(text_as_int[start:start+input_size]).float()
-    print(idx_to_char[text_as_int[start]], end='')
-    for i in range(100):
-        output, hidden = rnn(input, hidden)
-        output = torch.argmax(output)
-        print(idx_to_char[output.item()], end='')
-        input = output
-    print()
