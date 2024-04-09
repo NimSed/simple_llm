@@ -60,7 +60,8 @@ class RNNModel(nn.Module):
         return torch.zeros(1, self.hidden_size)
 
 # Instantiate the model
-rnn = RNNModel(input_size, hidden_size, output_size)
+device = torch.device('cuda:3' if torch.cuda.is_available() else 'cpu')
+rnn = RNNModel(input_size, hidden_size, output_size).to(device)
 
 # Loss and optimizer
 criterion = nn.CrossEntropyLoss()
@@ -78,13 +79,13 @@ def validate(rnn, text_as_int):
 
 # Train the model
 for epoch in range(num_epochs):
-    hidden = rnn.init_hidden()
+    hidden = rnn.init_hidden().to(device)
     total_loss = 0
 
     for i in range(0, len(text_as_int) - 1):
         x = one_hot_encode([text_as_int[i]], input_size)
-        y = torch.tensor([text_as_int[i + 1]], dtype=torch.long)
-        inputs = torch.from_numpy(x)
+        y = torch.tensor([text_as_int[i + 1]], dtype=torch.long).to(device)
+        inputs = torch.from_numpy(x).to(device)
         outputs, hidden = rnn(inputs, hidden)
         hidden = hidden.detach()
 
@@ -94,7 +95,7 @@ for epoch in range(num_epochs):
         optimizer.step()
         total_loss += loss.item()
 
-        if (i + 1) % 1000 == 0:
+        if (i + 1) % 10000 == 0:
             print(f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{len(text_as_int) - 1}], Loss: {loss.item()}')
 
     print(f'Epoch {epoch + 1}/{num_epochs}, Loss: {total_loss / len(text_as_int)}')
