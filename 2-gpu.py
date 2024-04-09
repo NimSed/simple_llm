@@ -60,6 +60,30 @@ rnn = RNNModel(input_size, hidden_size, output_size).to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(rnn.parameters(), lr=learning_rate)
 
+# Generate text
+def generate_text(rnn, seed_text='Gutenberg', predict_len=200):
+    with torch.no_grad():
+        hidden = rnn.init_hidden().to(device)
+        seed_text_as_int = torch.tensor([char_to_idx[ch] for ch in seed_text], dtype=torch.long).to(device)
+        seed_text_as_onehot = one_hot(seed_text_as_int, num_classes=input_size).float()
+
+        for i in range(len(seed_text) - 1):
+            _, hidden = rnn(seed_text_as_onehot[i].view(1, -1), hidden)
+
+        predicted_text = seed_text
+        x = seed_text_as_onehot[-1].view(1, -1)
+
+        for i in range(predict_len):
+            output, hidden = rnn(x, hidden)
+            _, topi = output.topk(1)
+            predicted_char = idx_to_char[topi.item()]
+            predicted_text += predicted_char
+            x = one_hot(topi, num_classes=input_size).float().view(1, -1)
+
+    return predicted_text
+
+print(generate_text(rnn))
+
 # Train the model
 for epoch in range(num_epochs):
     hidden = rnn.init_hidden().to(device)
@@ -82,3 +106,4 @@ for epoch in range(num_epochs):
             print(f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{len(text_as_int) - 1}], Loss: {loss.item()}')
 
     print(f'Epoch {epoch + 1}/{num_epochs}, Loss: {total_loss / len(text_as_int)}')
+    print(generate_text(rnn))
