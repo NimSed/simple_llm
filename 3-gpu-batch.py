@@ -51,7 +51,7 @@ class RNNModel(nn.Module):
         output = self.i2o(combined)
         return output, hidden
 
-    def init_hidden(self, batch_size):
+    def init_hidden(self, batch_size=1):
         return torch.zeros(batch_size, self.hidden_size)
 
 # Instantiate the model
