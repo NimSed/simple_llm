@@ -31,7 +31,6 @@ idx_to_char = {i: ch for i, ch in enumerate(chars)}
 input_size = len(chars)
 hidden_size = 100
 output_size = len(chars)
-num_layers = 1
 
 # Convert text to tensor
 text_as_int = torch.tensor([char_to_idx[ch] for ch in text], dtype=torch.long).to(device)
